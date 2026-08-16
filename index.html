@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECO CAUSA · Recomendador de reciclaje</title>
+<meta name="description" content="Encuentra el punto de reciclaje más cercano según lo que tengas para reciclar, o pregúntale al causa IA.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --verde: #3C9D40;
+  --verde-lima: #8DC63F;
+  --verde-oscuro: #16231C;
+  --gris: #6E7A70;
+  --blanco: #FFFFFF;
+  --fondo: #F3F7F1;
+  --card-bg: #FFFFFF;
+  --burbuja-usuario: #16231C;
+  --radio: 18px;
+  --font-display: 'Fredoka', sans-serif;
+  --font-body: 'Nunito Sans', sans-serif;
+  --font-data: 'Space Grotesk', monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--fondo);
+  color: var(--verde-oscuro);
+  background-image:
+    radial-gradient(circle at 10% 0%, rgba(141, 198, 63, 0.16), transparent 45%),
+    radial-gradient(circle at 90% 100%, rgba(60, 157, 64, 0.12), transparent 40%);
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--fondo);
+}
+
+/* ---------- HEADER ---------- */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, var(--verde) 0%, #2f7d33 100%);
+  color: var(--blanco);
+  border-radius: 0 0 22px 22px;
+  box-shadow: 0 6px 18px rgba(22, 35, 28, 0.18);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; }
+
+.brand-icon {
+  font-size: 26px;
+  background: rgba(255,255,255,0.18);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: 0.3px;
+}
+
+.brand-slogan {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 600;
+  opacity: 0.92;
+}
+
+.restart-btn {
+  background: rgba(255,255,255,0.16);
+  border: none;
+  color: var(--blanco);
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.restart-btn:hover { background: rgba(255,255,255,0.28); }
+
+/* ---------- CHAT ---------- */
+
+.chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 14px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-behavior: smooth;
+}
+
+.msg {
+  max-width: 86%;
+  padding: 11px 15px;
+  border-radius: var(--radio);
+  font-size: 14.5px;
+  line-height: 1.45;
+  animation: rise 0.22s ease-out;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.msg.bot {
+  align-self: flex-start;
+  background: var(--blanco);
+  color: var(--verde-oscuro);
+  border-bottom-left-radius: 6px;
+  box-shadow: 0 2px 8px rgba(22,35,28,0.06);
+}
+
+.msg.user {
+  align-self: flex-end;
+  background: var(--burbuja-usuario);
+  color: var(--blanco);
+  border-bottom-right-radius: 6px;
+}
+
+.msg.typing {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 13px 16px;
+}
+.msg.typing span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--gris);
+  animation: bounce 1.1s infinite ease-in-out;
+}
+.msg.typing span:nth-child(2) { animation-delay: 0.15s; }
+.msg.typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bounce { 0%,80%,100% { transform: translateY(0); opacity: .5;} 40% { transform: translateY(-4px); opacity: 1;} }
+
+/* ---------- RECOMMENDATION CARD ---------- */
+
+.card {
+  align-self: stretch;
+  background: var(--card-bg);
+  border: 1px solid rgba(22,35,28,0.08);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 3px 10px rgba(22,35,28,0.07);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 5px; height: 100%;
+  background: var(--verde-lima);
+}
+
+.card-rank {
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gris);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16.5px;
+  color: var(--verde-oscuro);
+  margin: 0 0 4px;
+}
+
+.card-reason {
+  font-size: 13.5px;
+  color: var(--gris);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px 10px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.card-grid .full { grid-column: 1 / -1; }
+
+.card-field-label {
+  font-family: var(--font-data);
+  font-size: 10.5px;
+  color: var(--gris);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: block;
+}
+
+.card-field-value { font-weight: 700; color: var(--verde-oscuro); }
+.card-field-value.warn { color: #B5651D; }
+.card-field-value.ok { color: var(--verde); }
+
+.card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.btn-map {
+  background: var(--verde-oscuro);
+  color: var(--blanco);
+  border: none;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.results-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-self: stretch;
+}
+
+/* ---------- CHIPS ---------- */
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 14px 10px;
+  scrollbar-width: none;
+}
+.chips::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex-shrink: 0;
+  background: var(--blanco);
+  border: 1.5px solid rgba(60,157,64,0.35);
+  color: var(--verde-oscuro);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 13px;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.chip:hover { background: var(--verde-lima); border-color: var(--verde-lima); transform: translateY(-1px); }
+.chip:active { transform: translateY(0); }
+
+.chip.primary {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: var(--blanco);
+}
+
+/* ---------- FEEDBACK ---------- */
+
+.feedback-row { display: flex; gap: 8px; margin-top: 4px; }
+.feedback-row .chip { font-size: 13px; }
+
+/* ---------- COMPOSER ---------- */
+
+.composer {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+  background: var(--fondo);
+  border-top: 1px solid rgba(22,35,28,0.08);
+}
+
+.composer-input {
+  flex: 1;
+  border: 1.5px solid rgba(22,35,28,0.14);
+  background: var(--blanco);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 14.5px;
+  font-family: var(--font-body);
+  color: var(--verde-oscuro);
+  outline: none;
+}
+.composer-input:focus { border-color: var(--verde); }
+
+.composer-send {
+  background: var(--verde);
+  color: var(--blanco);
+  border: none;
+  border-radius: 14px;
+  padding: 0 16px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.composer-send:hover { background: #338839; }
+.composer-send:disabled { opacity: 0.5; cursor: default; }
+
+@media (max-width: 400px) {
+  .composer-send { font-size: 0; width: 46px; }
+  .composer-send::after { content: "♻️"; font-size: 18px; }
+}
+
+/* ---------- MODE BAR (buscador guiado vs chat IA) ---------- */
+.mode-bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px 0;
+}
+.mode-btn {
+  flex: 1;
+  border: 1.5px solid rgba(22,35,28,0.12);
+  background: var(--blanco);
+  color: var(--gris);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 9px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.mode-btn.active {
+  background: var(--verde-oscuro);
+  border-color: var(--verde-oscuro);
+  color: var(--blanco);
+}
+.msg.bot.ia {
+  border-left: 3px solid var(--verde-lima);
+}
+.ia-disclaimer {
+  font-size: 11px;
+  color: var(--gris);
+  text-align: center;
+  padding: 2px 20px 0;
+}
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-icon" aria-hidden="true">♻️</span>
+      <div class="brand-text">
+        <span class="brand-name">ECO CAUSA</span>
+        <span class="brand-slogan">¡Dale, causa! Recicla hoy, cambia mañana.</span>
+      </div>
+    </div>
+    <button class="restart-btn" id="restartBtn" title="Empezar de nuevo" aria-label="Empezar de nuevo">↩️</button>
+  </header>
+
+  <div class="mode-bar">
+    <button class="mode-btn active" id="modeGuiadoBtn">🔍 Buscar mi punto</button>
+    <button class="mode-btn" id="modeIaBtn">💬 Preguntar al causa IA</button>
+  </div>
+
+  <main class="chat" id="chat" aria-live="polite"></main>
+
+  <div class="chips" id="chips"></div>
+
+  <form class="composer" id="composer">
+    <input
+      type="text"
+      id="userInput"
+      class="composer-input"
+      placeholder="Ejemplo: tengo 5 kilos de botellas de plástico…"
+      autocomplete="off"
+    >
+    <button type="submit" class="composer-send" id="sendBtn">ENCONTRAR MI PUNTO ♻️</button>
+  </form>
+
+</div>
+
+<script>
+/* =========================================================
+   ECO CAUSA — Recomendador con IA + Chat de ayuda con IA
+   Archivo único: CSS y datos incrustados.
+
+   MODO 1 "guiado": buscador determinista (normalización +
+   filtrado + scoring), corre 100% en el navegador.
+
+   MODO 2 "ia": chat libre que llama a /.netlify/functions/ask-ia,
+   la única pieza que necesita backend porque ahí (y solo ahí)
+   vive la ANTHROPIC_API_KEY.
+   ========================================================= */
+
+/* ---------- 0. DATOS EMBEBIDOS ---------- */
+const PUNTOS_DATA = [
+  {
+    "id": 1,
+    "nombre": "Relleno Sanitario Municipal de Trujillo",
+    "categoria": "Residuos sólidos generales / no especializado",
+    "distrito": "Trujillo",
+    "materiales": [],
+    "direccion": "Dato no disponible",
+    "horario": "Dato no disponible",
+    "tiempo_visita_min": null,
+    "recomendacion_local": "No priorizar para materiales reciclables especializados",
+    "nivel_verificacion": "confirmar antes de ir",
+    "mapa_url": "Dato no disponible",
+    "telefono": "Dato no disponible",
+    "observaciones": "Solo se muestra cuando no hay ningún punto especializado compatible con el residuo."
+  },
+  {
+    "id": 2,
+    "nombre": "NINO MULTISERVICIOS S.A.C.",
+    "categoria": "Recicladora",
+    "distrito": "Moche",
+    "materiales": [
+      {
+        "categoria": "metal",
+        "precio_soles_kg": 0.5
+      },
+      {
+        "categoria": "electronicos",
+        "precio_soles_kg": 0.5
+      }
+    ],
+    "direccion": "Dato no disponible",
+    "horario": "8:00 a.m. – 6:00 p.m.",
+    "tiempo_visita_min": 30,
+    "recomendacion_local": "Coordinar previamente",
+    "nivel_verificacion": "referencia registrada",
+    "mapa_url": "Dato no disponible",
+    "telefono": "Dato no disponible",
+    "observaciones": "Recibe residuos peligrosos y no peligrosos, metales, reaprovechables y RAEE."
+  },
+  {
+    "id": 3,
+    "nombre": "Recicladora Evans",
+    "categoria": "Recicladora",
+    "distrito": "Moche",
+    "materiales": [
+      {
+        "categoria": "metal",
+        "precio_soles_kg": 0.5
+      },
+      {
+        "categoria": "plastico",
+        "precio_soles_kg": 0.4
+      },
+      {
+        "categoria": "papel",
+        "precio_soles_kg": 0.4
+      },
+      {
+        "categoria": "vidrio",
+        "precio_soles_kg": null
+      },
+      {
+        "categoria": "baterias",
+        "precio_soles_kg": null
+      },
+      {
+        "categoria": "bolsas",
+        "precio_soles_kg": null
+      },
+      {
+        "categoria": "jebe",
+        "precio_soles_kg": null
+      }
+    ],
+    "direccion": "Dato no disponible",
+    "horario": "lunes a sábado, 8:00 a.m. – 6:00 p.m.",
+    "tiempo_visita_min": null,
+    "recomendacion_local": "Confirmar previamente",
+    "nivel_verificacion": "referencia registrada",
+    "mapa_url": "Dato no disponible",
+    "telefono": "Dato no disponible",
+    "observaciones": "También recibe aluminio, bronce, chatarra, muebles y radiadores (categorizados aquí como metal)."
+  },
+  {
+    "id": 4,
+    "nombre": "MULTISERVICIOS JHONSON THIAGO",
+    "categoria": "Recicladora",
+    "distrito": "Trujillo",
+    "materiales": [
+      {
+        "categoria": "metal",
+        "precio_soles_kg": 0.5
+      },
+      {
+        "categoria": "plastico",
+        "precio_soles_kg": 0.4
+      }
+    ],
+    "direccion": "Dato no disponible",
+    "horario": "24 horas",
+    "tiempo_visita_min": null,
+    "recomendacion_local": "Contactar antes de acudir",
+    "nivel_verificacion": "referencia registrada",
+    "mapa_url": "Dato no disponible",
+    "telefono": "Dato no disponible",
+    "observaciones": "Recibe materiales recuperables y chatarra."
+  },
+  {
+    "id": 5,
+    "nombre": "Recicladora Manuelita S.A.C.",
+    "categoria": "Recicladora",
+    "distrito": "La Esperanza",
+    "materiales": [
+      {
+        "categoria": "carton",
+        "precio_soles_kg": 0.4
+      },
+      {
+        "categoria": "vidrio",
+        "precio_soles_kg": 0.2
+      },
+      {
+        "categoria": "metal",
+        "precio_soles_kg": 0.5
+      }
+    ],
+    "direccion": "Dato no disponible",
+    "horario": "lunes a viernes 7:15 a.m.–12:30 p.m. y 1:45 p.m.–5:00 p.m.; sábado 7:30 a.m.–1:00 p.m.",
+    "tiempo_visita_min": null,
+    "recomendacion_local": "Dato no disponible",
+    "nivel_verificacion": "referencia registrada",
+    "mapa_url": "Dato no disponible",
+    "telefono": "Dato no disponible",
+    "observaciones": ""
+  },
+  {
+    "id": 6,
+    "nombre": "Consorcio Reciclador del Norte S.A.C.",
+    "categoria": "Recicladora",
+    "distrito": "Huanchaco",
+    "distrito_alt": "El Milagro",
+    "materiales": [
+      {
+        "categoria": "metal",
+        "precio_soles_kg": 0.5
+      },
+      {
+        "categoria": "carton",
+        "precio_soles_kg": 0.4
+      },
+      {
+        "categoria": "vidrio",
+        "precio_soles_kg": 0.2
+      },
+      {
+        "categoria": "plastico",
+        "precio_soles_kg": 0.4
+      },
+      {
+        "categoria": "papel",
+        "precio_soles_kg": 0.4
+      },
+      {
+        "categoria": "baterias",
+        "precio_soles_kg": null
+      },
+      {
+        "categoria": "bolsas",
+        "precio_soles_kg": null
+      },
+      {
+        "categoria": "jebe",
+        "precio_soles_kg": null
+      }
+    ],
+    "direccion": "Dato no disponible",
+    "horario": "lunes a sábado, 8:00 a.m. – 6:00 p.m.",
+    "tiempo_visita_min": null,
+    "recomendacion_local": "Dato no disponible",
+    "nivel_verificacion": "referencia registrada",
+    "mapa_url": "Dato no disponible",
+    "telefono": "Dato no disponible",
+    "observaciones": "También recibe aluminio, bronce, chatarra y radiadores (categorizados aquí como metal)."
+  },
+  {
+    "id": 7,
+    "nombre": "Recicladora Solari & Solari S.A.C.",
+    "categoria": "Recicladora",
+    "distrito": "Moche",
+    "materiales": [
+      {
+        "categoria": "carton",
+        "precio_soles_kg": 0.4
+      },
+      {
+        "categoria": "vidrio",
+        "precio_soles_kg": 0.2
+      },
+      {
+        "categoria": "metal",
+        "precio_soles_kg": 0.5
+      }
+    ],
+    "direccion": "Dato no disponible",
+    "horario": "24 horas",
+    "tiempo_visita_min": null,
+    "recomendacion_local": "Confirmar previamente",
+    "nivel_verificacion": "referencia registrada",
+    "mapa_url": "Dato no disponible",
+    "telefono": "Dato no disponible",
+    "observaciones": ""
+  },
+  {
+    "id": 8,
+    "nombre": "Recicladora y Servicios Generales Cuatro Aces S.A.C.",
+    "categoria": "Recicladora",
+    "distrito": "El Porvenir",
+    "distrito_alt": "Huanchaco",
+    "materiales": [
+      {
+        "categoria": "carton",
+        "precio_soles_kg": 0.4
+      },
+      {
+        "categoria": "vidrio",
+        "precio_soles_kg": 0.2
+      },
+      {
+        "categoria": "metal",
+        "precio_soles_kg": 0.5
+      }
+    ],
+    "direccion": "Dato no disponible",
+    "horario": "lunes a sábado, 8:00 a.m. – 6:00 p.m.",
+    "tiempo_visita_min": null,
+    "recomendacion_local": "Confirmar la hora de visita",
+    "nivel_verificacion": "referencia registrada",
+    "mapa_url": "Dato no disponible",
+    "telefono": "Dato no disponible",
+    "observaciones": "Enfocada en materiales y residuos metálicos."
+  },
+  {
+    "id": 9,
+    "nombre": "Recicladora Iparraguirre S.A.C.",
+    "categoria": "Recicladora",
+    "distrito": "La Esperanza",
+    "materiales": [
+      {
+        "categoria": "metal",
+        "precio_soles_kg": 0.5
+      },
+      {
+        "categoria": "carton",
+        "precio_soles_kg": 0.4
+      },
+      {
+        "categoria": "vidrio",
+        "precio_soles_kg": 0.2
+      },
+      {
+        "categoria": "plastico",
+        "precio_soles_kg": 0.4
+      },
+      {
+        "categoria": "papel",
+        "precio_soles_kg": 0.4
+      }
+    ],
+    "direccion": "Dato no disponible",
+    "horario": "no publicado",
+    "tiempo_visita_min": null,
+    "recomendacion_local": "Confirmar previamente",
+    "nivel_verificacion": "confirmar antes de ir",
+    "mapa_url": "Dato no disponible",
+    "telefono": "Dato no disponible",
+    "observaciones": "Recibe materiales y residuos aprovechables en general."
+  },
+  {
+    "id": 10,
+    "nombre": "Recicladora Centauro S.A.C.",
+    "categoria": "Recicladora",
+    "distrito": "Huanchaco",
+    "materiales": [
+      {
+        "categoria": "carton",
+        "precio_soles_kg": 0.4
+      },
+      {
+        "categoria": "vidrio",
+        "precio_soles_kg": 0.2
+      },
+      {
+        "categoria": "plastico",
+        "precio_soles_kg": 0.4
+      },
+      {
+        "categoria": "papel",
+        "precio_soles_kg": 0.4
+      }
+    ],
+    "direccion": "Dato no disponible",
+    "horario": "lunes a viernes 7:15 a.m.–12:30 p.m. y 1:45 p.m.–5:00 p.m.; sábado 7:30 a.m.–1:00 p.m.",
+    "tiempo_visita_min": null,
+    "recomendacion_local": "Verificar previamente que atienda visitantes",
+    "nivel_verificacion": "confirmar antes de ir",
+    "mapa_url": "Dato no disponible",
+    "telefono": "Dato no disponible",
+    "observaciones": "Desperdicios y desechos no metálicos (no recibe metal/chatarra)."
+  }
+];
+
+/* ---------- 1. ANALÍTICA (GA4-ready) ---------- */
+function trackEvent(name, params = {}) {
+  if (typeof window.gtag === 'function') window.gtag('event', name, params);
+  else console.log('[GA4 event]', name, params);
+}
+
+/* ---------- 2. NORMALIZACIÓN DE RESIDUOS ---------- */
+const CATEGORY_LABELS = {
+  plastico: 'plástico / PET', carton: 'cartón', papel: 'papel', vidrio: 'vidrio',
+  metal: 'metal / chatarra / aluminio', pilas: 'pilas', baterias: 'baterías',
+  electronicos: 'aparatos electrónicos (RAEE)', aceite: 'aceite usado',
+  textiles: 'ropa / textiles', bolsas: 'bolsas', jebe: 'jebe'
+};
+
+const KEYWORD_MAP = [
+  [/gaseosa|botella.*pl[aá]stic|pet\b|plastic/i, 'plastico'],
+  [/cart[oó]n|caja/i, 'carton'],
+  [/papel|hoja/i, 'papel'],
+  [/vidrio|frasco|botella.*vidrio/i, 'vidrio'],
+  [/lata|aluminio|bronce|chatarra|fierro|metal|radiador/i, 'metal'],
+  [/pila/i, 'pilas'],
+  [/bater[ií]a/i, 'baterias'],
+  [/electr[oó]nico|celular|laptop|computadora|raee|aparato/i, 'electronicos'],
+  [/aceite/i, 'aceite'],
+  [/ropa|textil|tela/i, 'textiles'],
+  [/bolsa/i, 'bolsas'],
+  [/jebe|llanta|caucho/i, 'jebe']
+];
+
+function normalizeResiduo(text) {
+  for (const [regex, cat] of KEYWORD_MAP) if (regex.test(text)) return cat;
+  return null;
+}
+
+const ESTADO_PREGUNTAS = {
+  plastico: '¿Las botellas están vacías y relativamente limpias?',
+  vidrio: '¿Los envases están vacíos y enteros (no rotos)?',
+  metal: '¿El material está entero o fragmentado?',
+  carton: '¿El cartón está seco o mojado?',
+  papel: '¿El papel está seco o mojado?',
+  electronicos: '¿El aparato todavía funciona o ya no funciona?',
+  pilas: '¿Las pilas están usadas/agotadas (no dañadas ni con fugas)?',
+  baterias: '¿La batería está usada/agotada (no dañada ni con fugas)?',
+  aceite: '¿El aceite está almacenado en un envase cerrado?',
+  textiles: '¿La ropa está limpia y en buen estado?',
+  bolsas: '¿Las bolsas están limpias y secas?',
+  jebe: '¿El material está entero o en pedazos?'
+};
+
+const MATERIALES_PELIGROSOS = ['pilas', 'baterias', 'electronicos', 'aceite'];
+
+/* ---------- 3. MATRIZ DE CERCANÍA ENTRE DISTRITOS (aproximada) ---------- */
+const DISTRITOS_VALIDOS = ['Trujillo', 'Moche', 'La Esperanza', 'El Porvenir', 'Huanchaco', 'Víctor Larco'];
+
+const DISTANCIA = {
+  'Trujillo':      { 'Trujillo': 1.0, 'Víctor Larco': 0.85, 'El Porvenir': 0.8, 'La Esperanza': 0.75, 'Huanchaco': 0.55, 'Moche': 0.5 },
+  'Moche':         { 'Moche': 1.0, 'Trujillo': 0.5, 'Víctor Larco': 0.6, 'El Porvenir': 0.4, 'La Esperanza': 0.35, 'Huanchaco': 0.3 },
+  'La Esperanza':  { 'La Esperanza': 1.0, 'Trujillo': 0.75, 'El Porvenir': 0.65, 'Víctor Larco': 0.55, 'Huanchaco': 0.45, 'Moche': 0.35 },
+  'El Porvenir':   { 'El Porvenir': 1.0, 'Trujillo': 0.8, 'La Esperanza': 0.65, 'Víctor Larco': 0.6, 'Huanchaco': 0.5, 'Moche': 0.4 },
+  'Huanchaco':     { 'Huanchaco': 1.0, 'Trujillo': 0.55, 'El Porvenir': 0.5, 'La Esperanza': 0.45, 'Víctor Larco': 0.5, 'Moche': 0.3 },
+  'Víctor Larco':  { 'Víctor Larco': 1.0, 'Trujillo': 0.85, 'Moche': 0.6, 'El Porvenir': 0.6, 'La Esperanza': 0.55, 'Huanchaco': 0.5 }
+};
+
+function normalizeDistrito(text) {
+  const t = text.toLowerCase();
+  if (/centro|trujillo/.test(t)) return 'Trujillo';
+  if (/moche/.test(t)) return 'Moche';
+  if (/esperanza/.test(t)) return 'La Esperanza';
+  if (/porvenir/.test(t)) return 'El Porvenir';
+  if (/huanchaco|milagro/.test(t)) return 'Huanchaco';
+  if (/v[ií]ctor larco|larco/.test(t)) return 'Víctor Larco';
+  return null;
+}
+
+function distanceScore(userDistrito, puntoDistrito, puntoDistritoAlt) {
+  const a = (DISTANCIA[userDistrito] || {})[puntoDistrito] ?? 0.3;
+  if (!puntoDistritoAlt) return a;
+  const b = (DISTANCIA[userDistrito] || {})[puntoDistritoAlt] ?? 0.3;
+  return Math.max(a, b);
+}
+
+/* ---------- 4. SCORING MULTICRITERIO ---------- */
+function scheduleScore(horario) {
+  if (!horario || /no disponible|no publicado/i.test(horario)) return 0.4;
+  if (/24 horas/i.test(horario)) return 1.0;
+  return 0.8;
+}
+function verificationScore(nivel) { return nivel === 'referencia registrada' ? 0.7 : 0.4; }
+function costScore(precio, minPrecio, maxPrecio) {
+  if (precio == null) return 0.3;
+  if (maxPrecio === minPrecio) return 0.7;
+  return 0.3 + 0.7 * ((precio - minPrecio) / (maxPrecio - minPrecio));
+}
+
+function computeRecommendations(puntos, { categoria, distrito }) {
+  let candidatos = puntos
+    .map(p => ({ punto: p, material: (p.materiales || []).find(m => m.categoria === categoria) }))
+    .filter(c => c.material);
+  if (candidatos.length === 0) return [];
+
+  const precios = candidatos.map(c => c.material.precio_soles_kg).filter(v => v != null);
+  const minPrecio = precios.length ? Math.min(...precios) : 0;
+  const maxPrecio = precios.length ? Math.max(...precios) : 0;
+
+  const scored = candidatos.map(({ punto, material }) => {
+    const dScore = distanceScore(distrito, punto.distrito, punto.distrito_alt);
+    const sScore = scheduleScore(punto.horario);
+    const cScore = costScore(material.precio_soles_kg, minPrecio, maxPrecio);
+    const vScore = verificationScore(punto.nivel_verificacion);
+    const score = (1.0 * 0.40) + (dScore * 0.25) + (sScore * 0.15) + (cScore * 0.10) + (vScore * 0.10);
+    return { punto, material, score, dScore, cScore, sScore, vScore };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, 5);
+}
+
+/* ---------- 5. ESTADO ---------- */
+const state = {
+  mode: 'guiado', // 'guiado' | 'ia'
+  step: 'residuo',
+  data: { categoria: null, categoriaLabel: null, cantidad: null, estadoResiduo: null, objetivo: null, distrito: null },
+  puntos: PUNTOS_DATA,
+  lastResults: [],
+  aiHistory: []
+};
+
+/* ---------- 6. UI HELPERS ---------- */
+const chatEl = document.getElementById('chat');
+const chipsEl = document.getElementById('chips');
+const composer = document.getElementById('composer');
+const inputEl = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const modeGuiadoBtn = document.getElementById('modeGuiadoBtn');
+const modeIaBtn = document.getElementById('modeIaBtn');
+
+function scrollToBottom() { chatEl.scrollTop = chatEl.scrollHeight; }
+
+function addMessage(text, who = 'bot', extraClass = '') {
+  const div = document.createElement('div');
+  div.className = `msg ${who} ${extraClass}`.trim();
+  div.innerHTML = text;
+  chatEl.appendChild(div);
+  scrollToBottom();
+  return div;
+}
+
+function addBotMessageWithDelay(text, delay = 450, extraClass = '') {
+  return new Promise(resolve => {
+    const typing = document.createElement('div');
+    typing.className = 'msg bot typing';
+    typing.innerHTML = '<span></span><span></span><span></span>';
+    chatEl.appendChild(typing);
+    scrollToBottom();
+    setTimeout(() => { typing.remove(); addMessage(text, 'bot', extraClass); resolve(); }, delay);
+  });
+}
+
+function setChips(options) {
+  chipsEl.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (opt.primary ? ' primary' : '');
+    btn.textContent = opt.label;
+    btn.addEventListener('click', () => { addMessage(opt.label, 'user'); opt.onClick(); });
+    chipsEl.appendChild(btn);
+  });
+}
+function clearChips() { chipsEl.innerHTML = ''; }
+
+/* ---------- 7. TOGGLE DE MODO ---------- */
+function setMode(mode) {
+  if (state.mode === mode) return;
+  state.mode = mode;
+  modeGuiadoBtn.classList.toggle('active', mode === 'guiado');
+  modeIaBtn.classList.toggle('active', mode === 'ia');
+  clearChips();
+
+  if (mode === 'ia') {
+    inputEl.placeholder = 'Ejemplo: ¿por qué debo separar las pilas del resto?';
+    sendBtn.textContent = 'PREGUNTAR 💬';
+    addMessage('Cambiaste al <b>chat de ayuda con IA</b>. Puedes preguntarme lo que quieras sobre reciclaje en Trujillo, y si necesitas un punto exacto te paso al buscador guiado. 🌱', 'bot', 'ia');
+  } else {
+    inputEl.placeholder = 'Ejemplo: tengo 5 kilos de botellas de plástico…';
+    sendBtn.textContent = 'ENCONTRAR MI PUNTO ♻️';
+    addMessage('Volviste al <b>buscador guiado</b>. Sigamos donde quedamos, causa. 🌱', 'bot');
+    resumeGuidedFlow();
+  }
+}
+modeGuiadoBtn.addEventListener('click', () => setMode('guiado'));
+modeIaBtn.addEventListener('click', () => setMode('ia'));
+
+function resumeGuidedFlow() {
+  switch (state.step) {
+    case 'residuo': askResiduo(); break;
+    case 'cantidad': askCantidad(); break;
+    case 'estado': askEstado(); break;
+    case 'objetivo': askObjetivo(); break;
+    case 'ubicacion': askUbicacion(); break;
+    default: offerRestartOptions();
+  }
+}
+
+/* ---------- 8. CHAT DE AYUDA CON IA ---------- */
+async function callAIChat(text) {
+  state.aiHistory.push({ role: 'user', content: text });
+  trackEvent('ai_help_message_sent');
+
+  const typing = document.createElement('div');
+  typing.className = 'msg bot typing';
+  typing.innerHTML = '<span></span><span></span><span></span>';
+  chatEl.appendChild(typing);
+  scrollToBottom();
+
+  try {
+    const res = await fetch('/.netlify/functions/ask-ia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: state.aiHistory })
+    });
+    const data = await res.json();
+    typing.remove();
+
+    if (!res.ok || !data.reply) {
+      addMessage('No pude conectarme con el causa IA en este momento. Esto suele pasar si la función aún no está desplegada en Netlify o falta configurar la API key. Mientras tanto, usa el <b>buscador guiado</b> 🔍.', 'bot', 'ia');
+      return;
+    }
+    state.aiHistory.push({ role: 'assistant', content: data.reply });
+    addMessage(data.reply, 'bot', 'ia');
+    trackEvent('ai_help_message_received');
+  } catch (err) {
+    typing.remove();
+    addMessage('No pude conectarme con el causa IA (esta función solo funciona una vez publicada en Netlify con la API key configurada). Prueba el buscador guiado mientras tanto 🔍.', 'bot', 'ia');
+  }
+}
+
+/* ---------- 9. FLUJO CONVERSACIONAL GUIADO ---------- */
+async function init() {
+  trackEvent('recommender_open');
+  await addBotMessageWithDelay('¡Hola, causa! 👋 Cuéntame qué quieres reciclar y te ayudo a encontrar dónde llevarlo. También puedes tocar "Preguntar al causa IA" arriba si tienes una duda general.', 300);
+  askResiduo();
+}
+
+function askResiduo() {
+  state.step = 'residuo';
+  setChips([
+    { label: '🧴 Plástico', onClick: () => handleResiduo('plástico') },
+    { label: '📦 Cartón', onClick: () => handleResiduo('cartón') },
+    { label: '📄 Papel', onClick: () => handleResiduo('papel') },
+    { label: '🍾 Vidrio', onClick: () => handleResiduo('vidrio') },
+    { label: '🥫 Latas', onClick: () => handleResiduo('latas') },
+    { label: '🔋 Pilas', onClick: () => handleResiduo('pilas') },
+    { label: '💻 Electrónicos', onClick: () => handleResiduo('electrónicos') },
+    { label: '🛢️ Aceite', onClick: () => handleResiduo('aceite') },
+    { label: '👕 Textiles', onClick: () => handleResiduo('ropa') },
+    { label: '♻️ Otro', onClick: () => handleResiduo('otro') }
+  ]);
+}
+
+async function handleResiduo(rawText) {
+  clearChips();
+  const cat = normalizeResiduo(rawText);
+  if (!cat) {
+    await addBotMessageWithDelay('¡De una! Pero necesito saber qué tienes exactamente. ¿Es plástico, cartón, vidrio, metal, electrónico, aceite, pilas u otro material? 🌱');
+    askResiduo();
+    return;
+  }
+  state.data.categoria = cat;
+  state.data.categoriaLabel = CATEGORY_LABELS[cat];
+  trackEvent('waste_selected', { tipo_residuo: cat });
+  await addBotMessageWithDelay(`¡De una, causa! ♻️ Entonces tienes <b>${CATEGORY_LABELS[cat]}</b>. ¿Más o menos cuánto tienes?`);
+  askCantidad();
+}
+
+function askCantidad() {
+  state.step = 'cantidad';
+  setChips([{ label: 'No sé exactamente', onClick: () => handleCantidad('no sé exactamente') }]);
+}
+
+async function handleCantidad(text) {
+  clearChips();
+  state.data.cantidad = text.trim();
+  trackEvent('quantity_entered', { cantidad: state.data.cantidad });
+  const pregunta = ESTADO_PREGUNTAS[state.data.categoria] || '¿En qué estado se encuentra el material?';
+  await addBotMessageWithDelay(`Anotado. ${pregunta}`);
+  askEstado();
+}
+
+function askEstado() {
+  state.step = 'estado';
+  setChips([
+    { label: 'Sí', onClick: () => handleEstado('sí') },
+    { label: 'No', onClick: () => handleEstado('no') },
+    { label: 'No estoy seguro', onClick: () => handleEstado('no estoy seguro') }
+  ]);
+}
+
+async function handleEstado(text) {
+  clearChips();
+  state.data.estadoResiduo = text.trim();
+  trackEvent('condition_selected', { estado: state.data.estadoResiduo });
+  await addBotMessageWithDelay('¡Perfecto! 🌱 ¿Qué quieres hacer con tus residuos?');
+  askObjetivo();
+}
+
+function askObjetivo() {
+  state.step = 'objetivo';
+  setChips([
+    { label: '📍 Encontrar dónde entregarlos', onClick: () => handleObjetivo('encontrar_donde_entregar') },
+    { label: '🚶 Llevarlos a un punto cercano', onClick: () => handleObjetivo('punto_cercano') },
+    { label: '💰 Recibir un pago si existe', onClick: () => handleObjetivo('recibir_pago') },
+    { label: '✅ Saber qué lugar lo acepta', onClick: () => handleObjetivo('saber_quien_acepta') },
+    { label: '🗑️ Solo deshacerme bien de ellos', onClick: () => handleObjetivo('desechar_correctamente') }
+  ]);
+}
+
+async function handleObjetivo(objetivo) {
+  clearChips();
+  state.data.objetivo = objetivo;
+  trackEvent('objective_selected', { objetivo });
+  await addBotMessageWithDelay('¡Ya casi, causa! ¿En qué distrito estás?');
+  askUbicacion();
+}
+
+function askUbicacion() {
+  state.step = 'ubicacion';
+  setChips(DISTRITOS_VALIDOS.map(d => ({ label: d, onClick: () => handleUbicacion(d) })));
+}
+
+async function handleUbicacion(text) {
+  clearChips();
+  const distrito = normalizeDistrito(text) || text;
+  if (!DISTRITOS_VALIDOS.includes(distrito)) {
+    await addBotMessageWithDelay('No tengo cobertura confirmada en esa zona todavía. ¿Estás en Trujillo, Moche, La Esperanza, El Porvenir, Huanchaco o Víctor Larco?');
+    askUbicacion();
+    return;
+  }
+  state.data.distrito = distrito;
+  trackEvent('location_selected', { distrito });
+  await addBotMessageWithDelay('¡Ya está! Encontré estas opciones según compatibilidad, cercanía y datos disponibles:', 550);
+  showResults();
+}
+
+/* ---------- 10. RESULTADOS ---------- */
+const RANK_ICONS = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+const RANK_LABELS = ['Mejor opción', 'Alternativa cercana', 'Alternativa por precio', 'Alternativa', 'Alternativa'];
+
+function buildReason(item) {
+  const { material, dScore } = item;
+  const cercania = dScore >= 0.75 ? 'está entre las opciones más cercanas a tu zona' : 'queda un poco más lejos, pero sí recibe el material que tienes';
+  const precio = material.precio_soles_kg != null ? `, con referencia de precio de S/ ${material.precio_soles_kg.toFixed(2)}/kg` : '';
+  return `Recibe ${CATEGORY_LABELS[state.data.categoria]} y ${cercania}${precio}.`;
+}
+
+function renderCard(item, index) {
+  const { punto, material } = item;
+  const precioTxt = material.precio_soles_kg != null ? `S/ ${material.precio_soles_kg.toFixed(2)}/kg` : 'Precio: consultar';
+  const horarioTxt = punto.horario || 'Consultar previamente';
+  const verifTxt = punto.nivel_verificacion === 'referencia registrada' ? 'Referencia registrada' : 'Confirma antes de ir';
+  const verifClass = punto.nivel_verificacion === 'referencia registrada' ? 'ok' : 'warn';
+  const tiempoTxt = punto.tiempo_visita_min ? `${punto.tiempo_visita_min} min aprox.` : 'Dato no disponible';
+  const mapaUrl = punto.mapa_url && punto.mapa_url !== 'Dato no disponible'
+    ? punto.mapa_url
+    : `https://www.google.com/maps/search/${encodeURIComponent(punto.nombre + ' ' + punto.distrito)}`;
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="card-rank">${RANK_ICONS[index]} ${RANK_LABELS[index]}</div>
+    <h3 class="card-title">${punto.nombre}</h3>
+    <p class="card-reason">${buildReason(item)}</p>
+    <div class="card-grid">
+      <div class="full">
+        <span class="card-field-label">📍 Ubicación</span>
+        <span class="card-field-value">${punto.distrito}${punto.distrito_alt ? ' / ' + punto.distrito_alt : ''} — ${punto.direccion}</span>
+      </div>
+      <div><span class="card-field-label">💰 Precio</span><span class="card-field-value">${precioTxt}</span></div>
+      <div><span class="card-field-label">🕐 Horario</span><span class="card-field-value">${horarioTxt}</span></div>
+      <div><span class="card-field-label">⏱️ Tiempo estimado</span><span class="card-field-value">${tiempoTxt}</span></div>
+      <div><span class="card-field-label">⚠️ Verificación</span><span class="card-field-value ${verifClass}">${verifTxt}</span></div>
+    </div>
+    <div class="card-actions">
+      <a class="btn-map" href="${mapaUrl}" target="_blank" rel="noopener">🗺️ Cómo llegar</a>
+    </div>
+  `;
+  card.querySelector('.btn-map').addEventListener('click', () => {
+    trackEvent('map_clicked', { punto_recomendado: punto.nombre, posicion_del_punto: index + 1 });
+  });
+  return card;
+}
+
+function showResults() {
+  const results = computeRecommendations(state.puntos, { categoria: state.data.categoria, distrito: state.data.distrito });
+  state.lastResults = results;
+
+  trackEvent('recommendation_generated', {
+    tipo_residuo: state.data.categoria, distrito: state.data.distrito,
+    cantidad: state.data.cantidad, objetivo: state.data.objetivo, resultados: results.length
+  });
+
+  if (MATERIALES_PELIGROSOS.includes(state.data.categoria) && results.length === 0) {
+    addMessage('No encontré una opción verificada en nuestra base para este residuo. Te recomiendo no llevarlo a cualquier punto y consultar previamente con un establecimiento especializado. ⚠️', 'bot');
+    offerRestartOptions();
+    return;
+  }
+
+  if (results.length === 0) {
+    addMessage('Uy, causa 😕 No encontré un punto verificado que coincida exactamente con lo que tienes.', 'bot');
+    addMessage('Podemos probar ampliando la zona o buscando otro material.', 'bot');
+    setChips([
+      { label: '🔎 Cambiar material', onClick: () => { addMessage('🔎 Cambiar material', 'user'); resetTo('residuo'); } },
+      { label: '📍 Cambiar zona', onClick: () => { addMessage('📍 Cambiar zona', 'user'); resetTo('ubicacion'); } },
+      { label: '↩️ Empezar de nuevo', onClick: restart }
+    ]);
+    return;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'results-wrap';
+  results.forEach((item, i) => wrap.appendChild(renderCard(item, i)));
+  chatEl.appendChild(wrap);
+  scrollToBottom();
+  offerRefineOptions();
+}
+
+function offerRefineOptions() {
+  clearChips();
+  addMessage('¿Quieres que te ayude a elegir la mejor opción?', 'bot');
+  setChips([
+    { label: '📍 Más cerca', onClick: () => refineBy('cercania') },
+    { label: '💰 Mejor precio', onClick: () => refineBy('precio') },
+    { label: '🕐 Mejor horario', onClick: () => refineBy('horario') },
+    { label: '⭐ Más confiable', onClick: () => refineBy('confiabilidad') }
+  ]);
+  setTimeout(offerFeedback, 300);
+}
+
+function refineBy(criterio) {
+  clearChips();
+  const sortKey = { cercania: 'dScore', precio: 'cScore', horario: 'sScore', confiabilidad: 'vScore' }[criterio];
+  const sorted = [...state.lastResults].sort((a, b) => b[sortKey] - a[sortKey]);
+  const wrap = document.createElement('div');
+  wrap.className = 'results-wrap';
+  sorted.forEach((item, i) => wrap.appendChild(renderCard(item, i)));
+  addMessage(`Priorizando por <b>${criterio}</b>:`, 'bot');
+  chatEl.appendChild(wrap);
+  scrollToBottom();
+  offerFeedback();
+}
+
+function offerFeedback() {
+  addMessage('¿Te sirvió esta recomendación, causa?', 'bot');
+  const row = document.createElement('div');
+  row.className = 'feedback-row';
+  [['👍 Sí, me ayudó', 'positivo'], ['😐 Más o menos', 'neutral'], ['👎 No me ayudó', 'negativo']].forEach(([label, val]) => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      addMessage(label, 'user');
+      trackEvent('feedback_opened', { valor: val });
+      row.remove();
+      addBotMessageWithDelay('Gracias por tu feedback, causa 🌱. Si quieres contarnos más, puedes dejarlo aquí:');
+      const linkMsg = addMessage('<a href="https://forms.gle/YVPfYSmqqC9XmEXJ6" target="_blank" rel="noopener" style="color:var(--verde);font-weight:700;">DEJAR FEEDBACK →</a>', 'bot');
+      linkMsg.querySelector('a').addEventListener('click', () => trackEvent('feedback_completed', { valor: val }));
+      offerRestartOptions();
+    });
+    row.appendChild(btn);
+  });
+  chatEl.appendChild(row);
+  scrollToBottom();
+}
+
+function offerRestartOptions() {
+  setTimeout(() => { setChips([{ label: '♻️ Buscar otro residuo', onClick: restart, primary: true }]); }, 400);
+}
+
+function resetTo(step) {
+  if (step === 'residuo') { state.data = { ...state.data, categoria: null, categoriaLabel: null }; askResiduo(); }
+  if (step === 'ubicacion') { askUbicacion(); }
+}
+
+function restart() {
+  state.step = 'residuo';
+  state.data = { categoria: null, categoriaLabel: null, cantidad: null, estadoResiduo: null, objetivo: null, distrito: null };
+  state.lastResults = [];
+  chatEl.innerHTML = '';
+  clearChips();
+  addBotMessageWithDelay('¡Dale, causa! Empecemos de nuevo 🌱 ¿Qué quieres reciclar?', 250).then(askResiduo);
+}
+
+document.getElementById('restartBtn').addEventListener('click', () => { if (state.mode === 'ia') setMode('guiado'); restart(); });
+
+/* ---------- 11. ENTRADA LIBRE DE TEXTO (enruta según el modo) ---------- */
+composer.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = inputEl.value.trim();
+  if (!text) return;
+  inputEl.value = '';
+  addMessage(text, 'user');
+
+  if (state.mode === 'ia') { callAIChat(text); return; }
+
+  switch (state.step) {
+    case 'residuo': handleResiduo(text); break;
+    case 'cantidad': handleCantidad(text); break;
+    case 'estado': handleEstado(text); break;
+    case 'ubicacion': handleUbicacion(text); break;
+    default:
+      addBotMessageWithDelay('Soy el causa verde de ECO CAUSA 🌱. Mi especialidad es ayudarte a encontrar dónde llevar tus residuos. Cuéntame qué quieres reciclar y empezamos.');
+      restart();
+  }
+});
+
+init();
+</script>
+</body>
+</html>
